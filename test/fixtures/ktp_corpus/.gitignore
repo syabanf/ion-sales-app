@@ -1,0 +1,4 @@
+# KTP scans contain PII — keep them dev-local.
+*
+!.gitignore
+!README.md
