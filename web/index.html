@@ -72,6 +72,46 @@
       obs.observe(document.body, {childList: true, subtree: true});
     }
   </script>
+  <script>
+    // Wave 65 — disable the Flutter service worker in dev so a stale
+    // build never serves cached main.dart.js to the browser.
+    //
+    // See ion-customer-app/web/index.html for the full rationale.
+    // Same hostname-gated guard; no-op in production.
+    (function () {
+      var host = window.location.hostname;
+      var isDev = host === 'localhost'
+               || host === '127.0.0.1'
+               || host === '0.0.0.0'
+               || /^192\.168\./.test(host)
+               || /^10\./.test(host)
+               || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+      if (!isDev || !('serviceWorker' in navigator)) return;
+
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      }).catch(function () { /* ignore */ });
+
+      if (window.caches && window.caches.keys) {
+        window.caches.keys().then(function (keys) {
+          keys.forEach(function (k) { window.caches.delete(k); });
+        }).catch(function () { /* ignore */ });
+      }
+
+      var noopRegister = function () {
+        return Promise.reject(new Error('SW registration suppressed (dev)'));
+      };
+      try {
+        Object.defineProperty(navigator.serviceWorker, 'register', {
+          value: noopRegister,
+          writable: false,
+          configurable: false,
+        });
+      } catch (_) {
+        navigator.serviceWorker.register = noopRegister;
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
