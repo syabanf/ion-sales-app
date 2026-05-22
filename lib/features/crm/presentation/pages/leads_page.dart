@@ -1175,8 +1175,138 @@ class StatsTab extends StatelessWidget {
           total: state.items.length,
         ),
         const SizedBox(height: 12),
+        // Wave 68 (S5) — MTD commission tile. Pairs the conversion
+        // funnel (above) with the rep's monthly earning signal so the
+        // Stats tab matches the PRD §6.1 dashboard intent.
+        const _MTDCommissionCard(),
+        const SizedBox(height: 12),
         _StatGrid(stats: stats),
       ],
+    );
+  }
+}
+
+/// Wave 68 (S5) — MTD commission earned. Fetches /api/crm/commissions/mine
+/// which returns `total_this_month` summed across all commission_records
+/// dated in the current calendar month. Tap → navigates to the full
+/// ledger page for drill-down.
+class _MTDCommissionCard extends StatefulWidget {
+  const _MTDCommissionCard();
+  @override
+  State<_MTDCommissionCard> createState() => _MTDCommissionCardState();
+}
+
+class _MTDCommissionCardState extends State<_MTDCommissionCard> {
+  late Future<Map<String, dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<Map<String, dynamic>> _load() async {
+    final res = await getIt<ApiClient>().request<Map<String, dynamic>>(
+      '/api/crm/commissions/mine',
+    );
+    return res.data ?? const <String, dynamic>{};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _future,
+      builder: (context, snap) {
+        final money = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
+        final thisMonth =
+            (snap.data?['total_this_month'] as num?)?.toDouble() ?? 0;
+        final totalEarned =
+            (snap.data?['total_earned'] as num?)?.toDouble() ?? 0;
+        final count = (snap.data?['count'] as num?)?.toInt() ?? 0;
+        final loading = snap.connectionState != ConnectionState.done;
+
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pushNamed('/commissions'),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: IonForm.surfaceBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: IonColors.mint500.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.payments_outlined,
+                    color: IonColors.mint500,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'MTD commission',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: IonColors.inkMuted,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        loading ? '…' : money.format(thisMonth),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: IonColors.ink,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        loading
+                            ? 'Loading earnings…'
+                            : 'YTD ${money.format(totalEarned)} · '
+                                '$count entr${count == 1 ? "y" : "ies"}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: IonColors.inkMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: IonColors.inkMuted,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
