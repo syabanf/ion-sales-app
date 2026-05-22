@@ -3,6 +3,11 @@ import 'package:equatable/equatable.dart';
 /// Lead status mirrors the backend's CRM domain. We keep the strings as
 /// the source of truth — the lifecycle is small enough that an enum
 /// adds little value and the UI just renders the string anyway.
+///
+/// Wave 80 (backend Wave 76, QA TC-CRM-002/007/008/010): added
+/// [leadType] + [referrerCustomerId] + [referrerCustomerName] so the
+/// wizard can capture the new fields and the list can show a friendly
+/// referrer name instead of the raw UUID.
 class Lead extends Equatable {
   const Lead({
     required this.id,
@@ -14,6 +19,7 @@ class Lead extends Equatable {
     this.productId,
     this.productName,
     required this.status,
+    this.leadType = 'broadband',
     this.source,
     this.salesId,
     this.notes,
@@ -22,6 +28,8 @@ class Lead extends Equatable {
     this.convertedOrderId,
     this.onboardingSchemaId,
     this.acceptExcessCable = false,
+    this.referrerCustomerId,
+    this.referrerCustomerName,
   });
 
   final String id;
@@ -33,6 +41,7 @@ class Lead extends Equatable {
   final String? productId;
   final String? productName;
   final String status;
+  final String leadType; // Wave 80 — 'broadband' (default) | 'enterprise'
   final String? source;
   final String? salesId;
   final String? notes;
@@ -41,12 +50,36 @@ class Lead extends Equatable {
   final String? convertedOrderId;
   final String? onboardingSchemaId;
   final bool acceptExcessCable;
+  final String? referrerCustomerId;   // Wave 80
+  final String? referrerCustomerName; // Wave 80 — joined display name
 
   bool get isConverted => convertedCustomerId != null;
 
   @override
-  List<Object?> get props => [id, leadNumber, fullName, phone, status, createdAt];
+  List<Object?> get props => [id, leadNumber, fullName, phone, status, leadType, createdAt];
 }
+
+/// Wave 80 — lead sources accepted by the backend (matches the
+/// `leads_source_check` CHECK constraint after migration 0049).
+///
+/// Source list is exposed as a typed list so the wizard dropdown is
+/// pinned to what the backend will accept. Operational sources
+/// (`manual`, `self_order`, `sales_app`, `cs_referral`) are kept at the
+/// end since they're inferred from the capture surface, not picked.
+const List<String> kLeadSourcesUserSelectable = [
+  'referral',
+  'cold_call',
+  'website',
+  'whatsapp',
+  'social_media_dm',
+  'voip_call',
+  'line_call',
+  'walk_in',
+  'event',
+  'partner',
+];
+
+const List<String> kLeadTypes = ['broadband', 'enterprise'];
 
 class LeadConversion extends Equatable {
   const LeadConversion({required this.customerId, required this.orderId, this.invoiceId});

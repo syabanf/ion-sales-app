@@ -84,6 +84,12 @@ class CrmApi {
 
   /// Create a lead. The Sales App calls this after the wizard collects
   /// coverage + product + GPS + (optionally) KTP-parsed fields.
+  ///
+  /// Wave 80 (backend Wave 76): added [leadType] (default broadband)
+  /// and [referrerCustomerId] (required when source=referral). The
+  /// backend rejects referrer_customer_id pointing at non-active
+  /// customers (TC-CRM-008), so callers should filter their dropdown
+  /// to status=active before submitting.
   Future<Lead> createLead({
     required String fullName,
     required String phone,
@@ -96,6 +102,8 @@ class CrmApi {
     bool acceptExcessCable = false,
     String? notes,
     String source = 'sales_app',
+    String leadType = 'broadband',
+    String? referrerCustomerId,
   }) async {
     final res = await _client.request<Map<String, dynamic>>(
       '/api/crm/leads',
@@ -111,6 +119,8 @@ class CrmApi {
         if (notes != null) 'notes': notes,
         'accept_excess_cable': acceptExcessCable,
         'source': source,
+        'lead_type': leadType,
+        if (referrerCustomerId != null) 'referrer_customer_id': referrerCustomerId,
       },
       options: _post,
     );
@@ -177,6 +187,9 @@ Lead _leadFromJson(Map<String, dynamic> j) => Lead(
       productId: j['product_id'] as String?,
       productName: j['product_name'] as String?,
       status: j['status'] as String? ?? 'new',
+      // Wave 80 (backend Wave 76 — TC-CRM-002): lead_type from wire,
+      // default to 'broadband' for back-compat with pre-Wave-76 rows.
+      leadType: j['lead_type'] as String? ?? 'broadband',
       source: j['source'] as String?,
       salesId: j['sales_id'] as String?,
       notes: j['notes'] as String?,
@@ -185,4 +198,7 @@ Lead _leadFromJson(Map<String, dynamic> j) => Lead(
       convertedOrderId: j['converted_order_id'] as String?,
       onboardingSchemaId: j['onboarding_schema_id'] as String?,
       acceptExcessCable: j['accept_excess_cable'] as bool? ?? false,
+      // Wave 80 (TC-CRM-007/008/010): referrer linkage + joined name.
+      referrerCustomerId: j['referrer_customer_id'] as String?,
+      referrerCustomerName: j['referrer_customer_name'] as String?,
     );
