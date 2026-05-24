@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:ion_sales_app/shared.dart';
+import '../../../phase2/presentation/pages/customers_page.dart'
+    show CustomersListBody;
 import '../../domain/lead.dart';
 import '../../domain/lead_repository.dart';
 import '../bloc/leads_bloc.dart';
@@ -977,161 +979,32 @@ class _PipelineGroupSliver extends StatelessWidget {
 }
 
 // =============================================================================
-// CustomersTab — Phase 2 placeholder
+// CustomersTab — embeds the real Phase 2 customer directory
 // =============================================================================
 
+/// Wave 130A — Customers tab now renders the real Phase 2 customer
+/// directory inline instead of a placeholder + "Browse customers" CTA
+/// that pushed the user to `/customers`. The previous version forced
+/// an extra navigation step before the rep could see any names; now
+/// the tab IS the directory.
+///
+/// The Phase 2 action surface (plan change / add-on / relocation)
+/// still lives on the per-customer detail page (tap a customer row),
+/// so the action tiles that used to live here are gone — they were
+/// dead-end shortcuts that all routed to the same `/customers` list
+/// anyway.
+///
+/// Standalone `/customers` route is preserved (in `app/router.dart`)
+/// so deep links from push notifications and the global search sheet
+/// keep working.
 class CustomersTab extends StatelessWidget {
   const CustomersTab({super.key, required this.controller});
   final ScrollController controller;
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      controller: controller,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      children: [
-        const Text(
-          'Customers',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: IonColors.ink,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        const Text(
-          'Manage your converted customers',
-          style: TextStyle(fontSize: 13, color: IonColors.inkMuted),
-        ),
-        const SizedBox(height: 18),
-
-        // Primary CTA — opens the full customer list. The cards below
-        // are quick-action shortcuts that also land on the list (then
-        // the rep picks who the action targets).
-        IonPrimaryButton(
-          label: 'Browse customers',
-          icon: Icons.people_alt_rounded,
-          onPressed: () => GoRouter.of(context).push('/customers'),
-        ),
-        const SizedBox(height: 18),
-
-        _Phase2Card(
-          icon: Icons.upgrade_rounded,
-          title: 'Plan upgrade / downgrade',
-          subtitle:
-              'Bump an existing customer to a faster plan, or step them down.',
-          onTap: () => GoRouter.of(context).push('/customers'),
-        ),
-        const SizedBox(height: 12),
-        _Phase2Card(
-          icon: Icons.add_box_outlined,
-          title: 'Add-on selling',
-          subtitle:
-              'Sell speed boost, CCTV, or IPTV to existing broadband customers.',
-          onTap: () => GoRouter.of(context).push('/customers'),
-        ),
-        const SizedBox(height: 12),
-        _Phase2Card(
-          icon: Icons.location_on_outlined,
-          title: 'Relocation request',
-          subtitle:
-              'Move a customer to a new address — re-uses the lead wizard.',
-          onTap: () => GoRouter.of(context).push('/customers'),
-        ),
-      ],
-    );
-  }
-}
-
-class _Phase2Card extends StatelessWidget {
-  const _Phase2Card({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-  });
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: IonForm.cardShadow,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: IonColors.ion100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: IonColors.ion600, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: IonColors.ink,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: IonColors.ion50,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            'PHASE 2',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: IonColors.ion700,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: IonColors.inkMuted,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return CustomersListBody(
+      showHeader: false,
+      scrollController: controller,
     );
   }
 }
